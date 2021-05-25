@@ -2453,7 +2453,7 @@ pJErr_t __pJCheckStr(const char *_str, size_t _size_str) {
 	size_t index_char = 0;
 	size_t inde_str_hex_num = 0;
 
-	if ((_str == NULL) || (_size_str == 0))
+	if (_str == NULL)
 	{
 		return PJ_ERROR_BAD_PARAMETERS;
 	}
