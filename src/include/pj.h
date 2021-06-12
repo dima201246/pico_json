@@ -462,6 +462,23 @@
 	*/
 	pJErr_t pJAddArrToArrObj(pJObj_t *_ptr_obj_json, const char *_str_path, size_t _index, const char *_str_key);
 
+
+	/*!
+		\brief Добавить объект в массив
+
+		\param _ptr_obj_json [in,out] Указатель на экземпляр JSON-объекта
+		\param _str_path [in] Путь к будущему расположению объекта
+		\param _index [in] Индекс объекта или массива в массиве
+		\param _str_key [in] Ключ
+		\param _ptr_obj_json_cpy [in] (Значение) Указатель на экземпляр вставляемого объекта
+
+		\warning Внутри функции _ptr_obj_json_cpy копируется с помощью pJDup()
+
+		\return Результат выполнения
+	*/
+	pJErr_t pJAddObjInToObjToArrObj(pJObj_t *_ptr_obj_json, const char *_str_path, size_t _index, const char *_str_key, const pJObj_t *_ptr_obj_json_cpy);
+
+
 	/*!
 		\brief Добавить строковое значение в или массив объект в массиве
 

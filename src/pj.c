@@ -2433,6 +2433,7 @@ void __pJCleanEscapeChar(char *_str) {
 	}
 }
 
+
 bool __pJCorrectIndex(const char *_str) {
 	size_t index_char = 0;
 	size_t size_str = strlen(_str);
@@ -2848,4 +2849,19 @@ pJErr_t pJAddObjInToObj(pJObj_t *_ptr_obj_json, const char *_str_path, const cha
 	}
 
 	return PJ_OK;
+}
+
+
+pJErr_t pJAddObjInToObjToArrObj(pJObj_t *_ptr_obj_json, const char *_str_path,  size_t _index, const char *_str_key, const pJObj_t *_ptr_obj_json_cpy) {
+	pJObj_t *ptr_obj_json_obj_in_array = NULL;
+	pJErr_t error_json = PJ_OK;
+
+	ptr_obj_json_obj_in_array = __pJGetObjInArrByIndex(_ptr_obj_json, _str_path, _index, &error_json);
+
+	if (error_json != PJ_OK)
+	{
+		return error_json;
+	}
+
+	return pJAddObjInToObj(ptr_obj_json_obj_in_array, NULL, _str_key, _ptr_obj_json_cpy);
 }
