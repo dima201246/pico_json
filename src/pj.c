@@ -2791,6 +2791,11 @@ pJErr_t pJAddObjInToObj(pJObj_t *_ptr_obj_json, const char *_str_path, const cha
 		return PJ_ERROR_CANT_ADD_OBJECT_WITH_KEY;
 	}
 
+	if (_ptr_obj_json_cpy->value_type == PJ_VALUE_TYPE_UNCKNOWN)
+	{
+		return PJ_ERROR_BAD_JSON_OBJECT_WITHOUT_VALUE;
+	}
+
 	error_json = pJDup(&obj_json, _ptr_obj_json_cpy);
 
 	if (error_json != PJ_OK)
