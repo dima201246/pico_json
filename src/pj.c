@@ -1257,7 +1257,7 @@ long long int pJGetLLNum(const pJObj_t *_ptr_obj_json, const char *_str_path, lo
 }
 
 
-float pJGetFloat(const pJObj_t *_ptr_obj_json, const char *_str_path, float _flt_if_not_found, pJErr_t *_ptr_error) {
+float pJGetFlt(const pJObj_t *_ptr_obj_json, const char *_str_path, float _flt_if_not_found, pJErr_t *_ptr_error) {
 	const pJObj_t *ptr_obj_json = NULL;
 
 	if (_ptr_obj_json == NULL)

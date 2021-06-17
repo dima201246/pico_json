@@ -234,7 +234,7 @@ void unpack() {
 
 	// Доступ к объекту по пути
 	{
-		flt = pJGetFloat(&obj_json, "object_value:array\\:value[2]_:[4]:[1]", -0.1, &error_json);
+		flt = pJGetFlt(&obj_json, "object_value:array\\:value[2]_:[4]:[1]", -0.1, &error_json);
 
 		if (error_json != PJ_OK)
 		{

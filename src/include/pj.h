@@ -271,7 +271,7 @@
 
 		\return Указатель на строку, при ошибке возвращает _flt_if_not_found
 	*/
-	float pJGetFloat(const pJObj_t *_ptr_obj_json, const char *_str_path, float _flt_if_not_found, pJErr_t *_ptr_error);
+	float pJGetFlt(const pJObj_t *_ptr_obj_json, const char *_str_path, float _flt_if_not_found, pJErr_t *_ptr_error);
 
 	/*!
 		\brief Получить NULL значение объекта
