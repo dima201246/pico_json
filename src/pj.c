@@ -2589,7 +2589,7 @@ char *__pJEscape(const char *_str, size_t _size_str, size_t *_ptr_size_new_str) 
 	char char_buf = '\0';
 	char *str_new = 0;
 
-	if ((_str == NULL) || (_size_str == NULL) || (_ptr_size_new_str == NULL))
+	if ((_str == NULL) || (_size_str == 0) || (_ptr_size_new_str == NULL))
 	{
 		return NULL;
 	}
@@ -2663,7 +2663,7 @@ char *__pJUnescape(const char *_str, size_t _size_str, size_t *_ptr_size_new_str
 	size_t index_char_new = 0;
 	char *str_new = NULL;
 
-	if ((_str == NULL) || (_size_str == NULL) || (_ptr_size_new_str == NULL))
+	if ((_str == NULL) || (_size_str == 0) || (_ptr_size_new_str == NULL))
 	{
 		return NULL;
 	}
