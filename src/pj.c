@@ -30,6 +30,12 @@ pJErr_t __pJCheckStr(const char *_str, size_t _size_str);
 pJErr_t __pJAddValue(pJObj_t *_ptr_obj_json, const char *_str_key, pJValueType_t _type_value, const void *_ptr_value, size_t _size_value);
 pJErr_t __pJAddObj(pJObj_t *_ptr_obj_json, const char *_str_key, pJValueType_t _type_value, const void *_ptr_value, size_t _size_value);
 pJObj_t *__pJGetObjInArrByIndex(pJObj_t *_ptr_obj_json, const char *_str_path, size_t _index, pJErr_t *_ptr_error);
+// Функция экранирования escape-символов
+char *__pJEscape(const char *_str, size_t _size_str, size_t *_ptr_size_new_str);
+// Функция разэкранирования escape-символов
+char *__pJUnescape(const char *_str, size_t _size_str, size_t *_ptr_size_new_str);
+// Функция расчёта длины строки с заэкранированными escape-символами
+size_t __pJEscapeStringLength(const char *_str, size_t _size_str);
 
 
 void pJSetFuncRealloc(void *(*_func_calloc)(size_t, size_t), char *(*_func_strndup)(const char *, size_t)) {
@@ -2066,10 +2072,23 @@ void __pJShowTree(const pJObj_t *_ptr_obj_json, size_t _depth) {
 
 
 pJErr_t __pJAddObjValue(pJObj_t *_ptr_obj_json, pJValueType_t _type_value, const void *_ptr_value, size_t _size_value) {
+	char *str_decoded = NULL;
+	size_t size_str_decoded = 0;
+
 	switch (_type_value) {
 		case PJ_VALUE_TYPE_STRING: {
 			_ptr_obj_json->value_type = PJ_VALUE_TYPE_STRING;
-			_ptr_obj_json->ptr_value = (void *)__pJStrndup((const char *)_ptr_value, _size_value);
+
+			str_decoded = __pJUnescape((const char *)_ptr_value, _size_value, &size_str_decoded);
+
+			if ((void *)str_decoded != _ptr_value)
+			{
+				_ptr_obj_json->ptr_value = str_decoded;
+			}
+			else
+			{
+				_ptr_obj_json->ptr_value = (void *)__pJStrndup((const char *)_ptr_value, _size_value);
+			}
 
 			#ifdef PJ_DEBUG
 			printf("Found string value: \"%s\"\n", (char *)_ptr_obj_json->ptr_value);
@@ -2252,7 +2271,7 @@ size_t __pJStrSize(pJObj_t *_ptr_obj_json) {
 			} break;
 
 			case PJ_VALUE_TYPE_STRING: {
-				size_str += 3 + strlen((const char *)_ptr_obj_json->ptr_value);
+				size_str += 3 + __pJEscapeStringLength((const char *)_ptr_obj_json->ptr_value, strlen((const char *)_ptr_obj_json->ptr_value));
 			} break;
 
 			case PJ_VALUE_TYPE_NUMBER: {
@@ -2287,6 +2306,8 @@ size_t __pJStrSize(pJObj_t *_ptr_obj_json) {
 
 char *__pJSerialize(pJObj_t *_ptr_obj_json, pJValueType_t _type_value, char *_ptr_to_str, bool _flag_first) {
 	size_t size_json_str = 0;
+	size_t size_str_encoded = 0;
+	char *str_encoded = NULL;
 
 	if (_ptr_obj_json == NULL)
 	{
@@ -2371,7 +2392,21 @@ char *__pJSerialize(pJObj_t *_ptr_obj_json, pJValueType_t _type_value, char *_pt
 
 			case PJ_VALUE_TYPE_STRING: {
 				strcat(_ptr_to_str, "\"");
-				strcat(_ptr_to_str, (const char *)_ptr_obj_json->ptr_value);
+
+				str_encoded = __pJEscape((const char *)_ptr_obj_json->ptr_value, \
+					strlen((const char *)_ptr_obj_json->ptr_value), \
+					&size_str_encoded);
+
+				if ((void *)str_encoded == _ptr_obj_json->ptr_value)
+				{
+					strcat(_ptr_to_str, (const char *)_ptr_obj_json->ptr_value);
+				}
+				else
+				{
+					strcat(_ptr_to_str, str_encoded);
+					free((void *)str_encoded);
+				}
+
 				strcat(_ptr_to_str, "\"");
 
 				if (_flag_first != true)
@@ -2514,14 +2549,208 @@ pJErr_t __pJCheckStr(const char *_str, size_t _size_str) {
 
 			continue;
 		}
-
-		if (_str[index_char] == '"')
-		{
-			return PJ_ERROR_BAD_STRING_VALUE;
-		}
 	}
 
 	return PJ_OK;
+}
+
+
+// Функция расчёта длины строки с заэкранированными escape-символами
+size_t __pJEscapeStringLength(const char *_str, size_t _size_str) {
+	size_t size_str_escape = 0;
+	size_t index_char = 0;
+
+	if ((_str == NULL) || (_size_str == 0))
+	{
+		return 0;
+	}
+
+	size_str_escape = _size_str;
+
+	for (index_char = 0; index_char < _size_str; ++index_char)
+	{
+		if ((_str[index_char] == '\"') || (_str[index_char] == '\\') || \
+			(_str[index_char] == '/') || (_str[index_char] == '\b') || \
+			(_str[index_char] == '\f') || (_str[index_char] == '\t') || \
+			(_str[index_char] == '\r') || (_str[index_char] == '\n'))
+		{
+			size_str_escape++;
+		}
+	}
+
+	return size_str_escape;
+}
+
+
+// Функция экранирования escape-символов
+char *__pJEscape(const char *_str, size_t _size_str, size_t *_ptr_size_new_str) {
+	size_t index_char = 0;
+	size_t index_char_new = 0;
+	char char_buf = '\0';
+	char *str_new = 0;
+
+	if ((_str == NULL) || (_size_str == NULL) || (_ptr_size_new_str == NULL))
+	{
+		return NULL;
+	}
+
+	*_ptr_size_new_str = __pJEscapeStringLength(_str, _size_str);
+
+	if (_size_str != *_ptr_size_new_str)
+	{
+		str_new = __pJCalloc((*_ptr_size_new_str + 1), sizeof(char));
+
+		if (str_new == NULL)
+		{
+			return NULL;
+		}
+
+		for (index_char = 0; index_char < _size_str; ++index_char, ++index_char_new)
+		{
+			char_buf = _str[index_char];
+
+			switch (char_buf) {
+				case '\f': {
+					str_new[index_char_new++] = '\\';
+					str_new[index_char_new] = 'f';
+				} break;
+
+				case '\r': {
+					str_new[index_char_new++] = '\\';
+					str_new[index_char_new] = 'r';
+				} break;
+
+				case '\b': {
+					str_new[index_char_new++] = '\\';
+					str_new[index_char_new] = 'b';
+				} break;
+
+				case '\t': {
+					str_new[index_char_new++] = '\\';
+					str_new[index_char_new] = 't';
+				} break;
+
+				case '\n': {
+					str_new[index_char_new++] = '\\';
+					str_new[index_char_new] = 'n';
+				} break;
+
+				case '\"':
+				case '\\':
+				case '/': {
+					str_new[index_char_new++] = '\\';
+					str_new[index_char_new] = char_buf;
+				} break;
+
+				default: {
+					str_new[index_char_new] = char_buf;
+				}
+			}
+		}
+	}
+	else
+	{
+		return (char *)_str;
+	}
+
+	return str_new;
+}
+
+
+// Функция разэкранирования escape-символов
+char *__pJUnescape(const char *_str, size_t _size_str, size_t *_ptr_size_new_str) {
+	size_t index_char = 0;
+	size_t index_char_new = 0;
+	char *str_new = NULL;
+
+	if ((_str == NULL) || (_size_str == NULL) || (_ptr_size_new_str == NULL))
+	{
+		return NULL;
+	}
+
+	*_ptr_size_new_str = 0;
+
+	while (index_char < _size_str)
+	{
+		if ((_str[index_char] == '\\') && \
+			((index_char + 1) != _size_str) && \
+			((_str[index_char + 1] == '\\') || (_str[index_char + 1] == '\"') || \
+			(_str[index_char + 1] == '/') || (_str[index_char + 1] == 'b') || \
+			(_str[index_char + 1] == 'f') || (_str[index_char + 1] == 't') || \
+			(_str[index_char + 1] == 'r') || (_str[index_char + 1] == 'n')))
+		{
+			index_char++;
+		}
+
+		index_char++;
+		(*_ptr_size_new_str)++;
+	}
+
+	if (_size_str == *_ptr_size_new_str)
+	{
+		return (char *)_str;
+	}
+
+	str_new = __pJCalloc((*_ptr_size_new_str + 1), sizeof(char));
+
+	if (str_new != NULL)
+	{
+		for (index_char = 0; index_char < _size_str;)
+		{
+			if ((_str[index_char] == '\\') && ((index_char + 1) < _size_str))
+			{
+				switch (_str[index_char + 1]) {
+					case 'f': {
+						index_char++;
+						str_new[index_char_new] = '\f';
+					} break;
+
+					case 'r': {
+						index_char++;
+						str_new[index_char_new] = '\r';
+					} break;
+
+					case 'b': {
+						index_char++;
+						str_new[index_char_new] = '\b';
+					} break;
+
+					case 't': {
+						index_char++;
+						str_new[index_char_new] = '\t';
+					} break;
+
+					case 'n': {
+						index_char++;
+						str_new[index_char_new] = '\n';
+					} break;
+
+					case '\"':
+					case '\\':
+					case '/': {
+						index_char++;
+						str_new[index_char_new] = _str[index_char];
+					} break;
+
+					default: {
+						str_new[index_char_new] = _str[index_char];
+					}
+				}
+
+				index_char++;
+				index_char_new++;
+
+				continue;
+			}
+
+			str_new[index_char_new] = _str[index_char];
+
+			index_char++;
+			index_char_new++;
+		}
+	}
+
+	return str_new;
 }
 
 
