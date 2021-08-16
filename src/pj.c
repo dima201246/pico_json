@@ -2397,7 +2397,7 @@ char *__pJSerialize(pJObj_t *_ptr_obj_json, pJValueType_t _type_value, char *_pt
 					strlen((const char *)_ptr_obj_json->ptr_value), \
 					&size_str_encoded);
 
-				if ((void *)str_encoded == _ptr_obj_json->ptr_value)
+				if (((void *)str_encoded == _ptr_obj_json->ptr_value) || (str_encoded == NULL))
 				{
 					strcat(_ptr_to_str, (const char *)_ptr_obj_json->ptr_value);
 				}
